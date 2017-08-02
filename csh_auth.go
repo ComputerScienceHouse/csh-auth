@@ -71,7 +71,7 @@ func AuthWrapper(page gin.HandlerFunc) gin.HandlerFunc {
             return []byte(secret), nil
         })
         if err != nil {
-            log.Fatal("token failure")
+            log.Error("token failure")
             return
         }
 
@@ -81,7 +81,7 @@ func AuthWrapper(page gin.HandlerFunc) gin.HandlerFunc {
             // call the wrapped func
             page(c)
         } else {
-            log.Fatal("error on auth layer?")
+            log.Error("claim parsing failure")
             return
         }
     })
@@ -95,22 +95,22 @@ func AuthRequest(c *gin.Context) {
 
 func AuthCallback(c *gin.Context) {
     if c.Query("state") != state {
-        log.Fatal("error state not match\n")
+        log.Error("state does not match")
         return
     }
     oauth2Token, err := config.Exchange(ctx, c.Query("code"))
     if err != nil {
-        log.Fatal("failed to exchange token\n")
+        log.Error("failed to exchange token")
         return
     }
     userInfo:= &CSHUserInfo{}
     oidcUserInfo, err := provider.UserInfo(ctx, oauth2.StaticTokenSource(oauth2Token))
     if err != nil {
-        log.Fatal("failed to get userinfo\n")
+        log.Error("failed to get userinfo")
     }
     oidcUserInfo.Claims(userInfo)
     if err != nil {
-        log.Fatal("failed to get userinfo marshal\n")
+        log.Error("failed to marshal userinfo")
     }
 
     expireToken := time.Now().Add(time.Hour * 1).Unix()
@@ -139,7 +139,7 @@ func Init(auth_uri string) {
     ctx = context.Background()
     provider, err = oidc.NewProvider(ctx, provider_uri)
     if err != nil {
-        log.Fatal(err)
+        log.Error("Failed to Create oidc Provider")
     }
     config = oauth2.Config{
         ClientID: clientID,
