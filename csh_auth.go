@@ -114,7 +114,7 @@ func AuthCallback(c *gin.Context) {
     }
 
     expireToken := time.Now().Add(time.Hour * 1).Unix()
-    expireCookie := 0 // session
+    expireCookie := 3600
     claims := CSHClaims {
         oauth2Token.AccessToken,
         *userInfo,
