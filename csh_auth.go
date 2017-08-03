@@ -13,7 +13,7 @@ import (
 )
 
 const AuthKey = "cshauth"
-
+const CookieName = "Auth"
 const ProviderURI = "https://sso.csh.rit.edu/realms/csh"
 
 // =================
@@ -59,8 +59,7 @@ func (auth *CSHAuth) AuthWrapper(page gin.HandlerFunc) gin.HandlerFunc {
 	auth_uri := auth.authenticate_uri
 	log.Info(auth_uri)
 	return gin.HandlerFunc(func(c *gin.Context) {
-
-		cookie, err := c.Cookie("Auth")
+		cookie, err := c.Cookie(CookieName)
 		if err != nil || cookie == "" {
 			log.Info("cookie not found")
 			log.Info(auth_uri)
@@ -129,7 +128,7 @@ func (auth *CSHAuth) AuthCallback(c *gin.Context) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString([]byte(auth.secret))
 
-	c.SetCookie("Auth", signedToken, int(expireCookie), "", "", false, true)
+	c.SetCookie(CookieName, signedToken, int(expireCookie), "", "", false, true)
 	c.Redirect(http.StatusFound, c.Query("referer"))
 }
 
@@ -159,6 +158,6 @@ func (auth *CSHAuth) Init(clientID, clientSecret, secret, state, server_host, re
 }
 
 func (auth *CSHAuth) AuthLogout(c *gin.Context) {
-	c.SetCookie("Auth", "", 0, "", "", false, true)
+	c.SetCookie(CookieName, "", 0, "", "", false, true)
 	c.Redirect(http.StatusFound, ProviderURI+"/protocol/openid-connect/logout?redirect_uri=http://"+auth.server_host+"/")
 }
