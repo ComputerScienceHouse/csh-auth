@@ -55,15 +55,11 @@ type CSHUserInfo struct {
 // =================
 
 func (auth *CSHAuth) AuthWrapper(page gin.HandlerFunc) gin.HandlerFunc {
-	log.Info(auth.authenticate_uri)
-	auth_uri := auth.authenticate_uri
-	log.Info(auth_uri)
 	return gin.HandlerFunc(func(c *gin.Context) {
 		cookie, err := c.Cookie(CookieName)
 		if err != nil || cookie == "" {
 			log.Info("cookie not found")
-			log.Info(auth_uri)
-			c.Redirect(http.StatusFound, auth_uri+"?referer="+c.Request.URL.String())
+			c.Redirect(http.StatusFound, auth.authenticate_uri+"?referer="+c.Request.URL.String())
 			return
 		}
 
