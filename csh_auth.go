@@ -21,13 +21,13 @@ const ProviderURI = "https://sso.csh.rit.edu/realms/csh"
 // =================
 
 type CSHAuth struct {
-	clientID         string // = os.Getenv("csh_auth_client_id")
-	clientSecret     string // = os.Getenv("csh_auth_client_secret")
-	secret           string // = os.Getenv("csh_auth_jwt_secret")
-	state            string // = os.Getenv("csh_auth_state")
-	server_host      string // = os.Getenv("csh_auth_server_host")
-	redirect_uri     string // = os.Getenv("csh_auth_redirect_uri")
-	authenticate_uri string // = "/authenticate"
+	clientID         string
+	clientSecret     string
+	secret           string
+	state            string
+	server_host      string
+	redirect_uri     string
+	authenticate_uri string
 
 	config   oauth2.Config // this guy changes a bit, weird
 	ctx      context.Context
