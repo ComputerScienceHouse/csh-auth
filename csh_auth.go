@@ -14,7 +14,7 @@ import (
 
 const AuthKey = "cshauth"
 const CookieName = "Auth"
-const ProviderURI = "https://sso.csh.rit.edu/realms/csh"
+const ProviderURI = "https://sso.csh.rit.edu/auth/realms/csh"
 
 // =================
 //	  structs
