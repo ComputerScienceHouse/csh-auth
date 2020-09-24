@@ -41,7 +41,7 @@ type CSHClaims struct {
 }
 
 type CSHUserInfo struct {
-	Subject       string `json:"sub"`
+	Subject       string `json:"uuid"`
 	Profile       string `json:"profile"`
 	Email         string `json:"email"`
 	EmailVerified bool   `json:"email_verified"`
