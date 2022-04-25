@@ -2,14 +2,15 @@ package csh_auth
 
 import (
 	"errors"
+	"net/http"
+	"time"
+
 	oidc "github.com/coreos/go-oidc"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
-	"net/http"
-	"time"
 )
 
 const AuthKey = "cshauth"
@@ -46,8 +47,9 @@ type CSHUserInfo struct {
 	Email         string `json:"email"`
 	EmailVerified bool   `json:"email_verified"`
 	// contains filtered or unexported fields
-	Username string `json:"preferred_username"`
-	FullName string `json:"name"`
+	Username string   `json:"preferred_username"`
+	FullName string   `json:"name"`
+	Groups   []string `json:"groups"`
 }
 
 // =================
@@ -128,7 +130,7 @@ func (auth *CSHAuth) AuthCallback(c *gin.Context) {
 	c.Redirect(http.StatusFound, c.Query("referer"))
 }
 
-func (auth *CSHAuth) Init(clientID, clientSecret, secret, state, server_host, redirect_uri, auth_uri string) {
+func (auth *CSHAuth) Init(clientID, clientSecret, secret, state, server_host, redirect_uri, auth_uri string, scopes []string) {
 	auth.clientID = clientID
 	auth.clientSecret = clientSecret
 	auth.secret = secret
@@ -143,13 +145,14 @@ func (auth *CSHAuth) Init(clientID, clientSecret, secret, state, server_host, re
 	if err != nil {
 		log.Error("Failed to Create oidc Provider")
 	}
+	copy(scopes[:], []string{oidc.ScopeOpenID}[:])
 	log.Info(auth.authenticate_uri)
 	auth.config = oauth2.Config{
 		ClientID:     auth.clientID,
 		ClientSecret: auth.clientSecret,
 		Endpoint:     auth.provider.Endpoint(),
 		RedirectURL:  auth.redirect_uri,
-		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
+		Scopes:       scopes,
 	}
 }
 
