@@ -158,5 +158,5 @@ func (auth *CSHAuth) Init(clientID, clientSecret, secret, state, server_host, re
 
 func (auth *CSHAuth) AuthLogout(c *gin.Context) {
 	c.SetCookie(CookieName, "", 0, "", "", false, true)
-	c.Redirect(http.StatusFound, ProviderURI+"/protocol/openid-connect/logout?redirect_uri=http://"+auth.server_host+"/")
+	c.Redirect(http.StatusFound, ProviderURI+"/protocol/openid-connect/logout?redirect_uri="+auth.server_host+"/")
 }
