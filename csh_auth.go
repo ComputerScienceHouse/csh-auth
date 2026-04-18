@@ -6,8 +6,8 @@ import (
 	"time"
 
 	oidc "github.com/coreos/go-oidc"
-	jwt "github.com/golang-jwt/jwt"
 	"github.com/gin-gonic/gin"
+	jwt "github.com/golang-jwt/jwt"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
@@ -158,5 +158,5 @@ func (auth *CSHAuth) Init(clientID, clientSecret, secret, state, server_host, re
 
 func (auth *CSHAuth) AuthLogout(c *gin.Context) {
 	c.SetCookie(CookieName, "", 0, "", "", false, true)
-	c.Redirect(http.StatusFound, ProviderURI+"/protocol/openid-connect/logout?redirect_uri="+auth.server_host+"/")
+	c.Redirect(http.StatusFound, ProviderURI+"/protocol/openid-connect/logout?post_logout_redirect_uri="+auth.server_host+"/&client_id="+auth.clientID+"")
 }
