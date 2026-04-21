@@ -56,13 +56,12 @@ type CSHUserInfo struct {
 //	auth helper
 // =================
 
-func (auth *CSHAuth) AuthWrapper(page gin.HandlerFunc) gin.HandlerFunc {
-	return gin.HandlerFunc(func(c *gin.Context) {
+func addAuthUserInfoContext(c *gin.Context) err {
 		cookie, err := c.Cookie(CookieName)
 		if err != nil || cookie == "" {
 			log.Info("cookie not found")
 			c.Redirect(http.StatusFound, auth.authenticate_uri+"?referer="+c.Request.URL.String())
-			return
+			return errors.New("cookie not found")
 		}
 
 		token, err := jwt.ParseWithClaims(cookie, &CSHClaims{}, func(token *jwt.Token) (interface{}, error) {
@@ -73,18 +72,36 @@ func (auth *CSHAuth) AuthWrapper(page gin.HandlerFunc) gin.HandlerFunc {
 		})
 		if err != nil {
 			log.Error("token failure")
-			return
+			return errors.New("token failure")
 		}
 
 		if claims, ok := token.Claims.(*CSHClaims); ok && token.Valid {
 			// add in user info data
 			c.Set(AuthKey, *claims)
-			// call the wrapped func
-			page(c)
 		} else {
 			log.Error("claim parsing failure")
+			return errors.New("failure parsing claims from token")
 		}
+}
+
+func (auth *CSHAuth) AuthWrapper(page gin.HandlerFunc) gin.HandlerFunc {
+	return gin.HandlerFunc(func(c *gin.Context) {
+		err := addAuthUserInfoContext(c)
+		if err != nil {
+			return
+		}
+		page(c)
 	})
+}
+
+func (auth *CSHAuth) AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		err := addAuthUserInfoContext(c)
+		if err != nil {
+			return
+		}
+		c.Next()
+	}
 }
 
 func (auth *CSHAuth) AuthRequest(c *gin.Context) {
