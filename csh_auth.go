@@ -56,7 +56,7 @@ type CSHUserInfo struct {
 //	auth helper
 // =================
 
-func addAuthUserInfoContext(c *gin.Context) err {
+func (auth *CSHAuth) addAuthUserInfoContext(c *gin.Context) error {
 		cookie, err := c.Cookie(CookieName)
 		if err != nil || cookie == "" {
 			log.Info("cookie not found")
@@ -82,11 +82,12 @@ func addAuthUserInfoContext(c *gin.Context) err {
 			log.Error("claim parsing failure")
 			return errors.New("failure parsing claims from token")
 		}
+	return nil
 }
 
 func (auth *CSHAuth) AuthWrapper(page gin.HandlerFunc) gin.HandlerFunc {
 	return gin.HandlerFunc(func(c *gin.Context) {
-		err := addAuthUserInfoContext(c)
+		err := auth.addAuthUserInfoContext(c)
 		if err != nil {
 			return
 		}
@@ -96,7 +97,7 @@ func (auth *CSHAuth) AuthWrapper(page gin.HandlerFunc) gin.HandlerFunc {
 
 func (auth *CSHAuth) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		err := addAuthUserInfoContext(c)
+		err := auth.addAuthUserInfoContext(c)
 		if err != nil {
 			return
 		}
