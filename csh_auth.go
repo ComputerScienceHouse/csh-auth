@@ -56,13 +56,12 @@ type CSHUserInfo struct {
 //	auth helper
 // =================
 
-func (auth *CSHAuth) AuthWrapper(page gin.HandlerFunc) gin.HandlerFunc {
-	return gin.HandlerFunc(func(c *gin.Context) {
+func (auth *CSHAuth) addAuthUserInfoContext(c *gin.Context) error {
 		cookie, err := c.Cookie(CookieName)
 		if err != nil || cookie == "" {
 			log.Info("cookie not found")
 			c.Redirect(http.StatusFound, auth.authenticate_uri+"?referer="+c.Request.URL.String())
-			return
+			return errors.New("cookie not found")
 		}
 
 		token, err := jwt.ParseWithClaims(cookie, &CSHClaims{}, func(token *jwt.Token) (interface{}, error) {
@@ -73,18 +72,37 @@ func (auth *CSHAuth) AuthWrapper(page gin.HandlerFunc) gin.HandlerFunc {
 		})
 		if err != nil {
 			log.Error("token failure")
-			return
+			return errors.New("token failure")
 		}
 
 		if claims, ok := token.Claims.(*CSHClaims); ok && token.Valid {
 			// add in user info data
 			c.Set(AuthKey, *claims)
-			// call the wrapped func
-			page(c)
 		} else {
 			log.Error("claim parsing failure")
+			return errors.New("failure parsing claims from token")
 		}
+	return nil
+}
+
+func (auth *CSHAuth) AuthWrapper(page gin.HandlerFunc) gin.HandlerFunc {
+	return gin.HandlerFunc(func(c *gin.Context) {
+		err := auth.addAuthUserInfoContext(c)
+		if err != nil {
+			return
+		}
+		page(c)
 	})
+}
+
+func (auth *CSHAuth) AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		err := auth.addAuthUserInfoContext(c)
+		if err != nil {
+			return
+		}
+		c.Next()
+	}
 }
 
 func (auth *CSHAuth) AuthRequest(c *gin.Context) {
@@ -130,7 +148,7 @@ func (auth *CSHAuth) AuthCallback(c *gin.Context) {
 	c.Redirect(http.StatusFound, c.Query("referer"))
 }
 
-func (auth *CSHAuth) Init(clientID, clientSecret, secret, state, server_host, redirect_uri, auth_uri string, scopes []string) {
+func (auth *CSHAuth) Init(clientID, clientSecret, secret, state, server_host, redirect_uri, auth_uri string, scopes []string) error {
 	auth.clientID = clientID
 	auth.clientSecret = clientSecret
 	auth.secret = secret
@@ -144,6 +162,8 @@ func (auth *CSHAuth) Init(clientID, clientSecret, secret, state, server_host, re
 	auth.provider, err = oidc.NewProvider(auth.ctx, ProviderURI)
 	if err != nil {
 		log.Error("Failed to Create oidc Provider")
+		log.Error(err)
+		return err
 	}
 	copy(scopes[:], []string{oidc.ScopeOpenID}[:])
 	log.Info(auth.authenticate_uri)
@@ -154,6 +174,7 @@ func (auth *CSHAuth) Init(clientID, clientSecret, secret, state, server_host, re
 		RedirectURL:  auth.redirect_uri,
 		Scopes:       scopes,
 	}
+	return nil
 }
 
 func (auth *CSHAuth) AuthLogout(c *gin.Context) {
