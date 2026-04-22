@@ -29,12 +29,21 @@ csh.Init(
 
 ```
 r.GET("/auth/login", csh.AuthRequest) // This endpoint should match auth_uri
-r.GET("/auth/redir", csh.AuthCallback) // This endpoint should match the relative portion of redirect_uri
-r.Get("/auth/logout", csh.AuthLogout)
+r.GET("/auth/callback", csh.AuthCallback) // This endpoint should match the relative portion of redirect_uri
+r.GET("/auth/logout", csh.AuthLogout)
 ```
 
 4. Add endpoints to be behind authentication
 
+a. Use a wrapper function
 ```
-r.Get("/hidden/prize", csh.AuthWrapper(endpoint_hidden_prize))
+r.GET("/hidden/prize", csh.AuthWrapper(endpoint_hidden_prize))
 ```
+
+b. Use middleware.
+
+For a single route: `r.GET("/hidden/prize", csh.AuthWrapper, endpoint_hidden_prize)`  
+This works because Gin will run the widest scope function to the most narrow scope function, in order. 
+
+For more/all routes: Check the [Gin Middleware documentation](https://gin-gonic.com/en/docs/middleware/) page.
+
