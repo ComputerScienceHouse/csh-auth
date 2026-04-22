@@ -148,7 +148,7 @@ func (auth *CSHAuth) AuthCallback(c *gin.Context) {
 	c.Redirect(http.StatusFound, c.Query("referer"))
 }
 
-func (auth *CSHAuth) Init(clientID, clientSecret, secret, state, server_host, redirect_uri, auth_uri string, scopes []string) {
+func (auth *CSHAuth) Init(clientID, clientSecret, secret, state, server_host, redirect_uri, auth_uri string, scopes []string) error {
 	auth.clientID = clientID
 	auth.clientSecret = clientSecret
 	auth.secret = secret
@@ -162,6 +162,8 @@ func (auth *CSHAuth) Init(clientID, clientSecret, secret, state, server_host, re
 	auth.provider, err = oidc.NewProvider(auth.ctx, ProviderURI)
 	if err != nil {
 		log.Error("Failed to Create oidc Provider")
+		log.Error(err)
+		return err
 	}
 	copy(scopes[:], []string{oidc.ScopeOpenID}[:])
 	log.Info(auth.authenticate_uri)
@@ -172,6 +174,7 @@ func (auth *CSHAuth) Init(clientID, clientSecret, secret, state, server_host, re
 		RedirectURL:  auth.redirect_uri,
 		Scopes:       scopes,
 	}
+	return nil
 }
 
 func (auth *CSHAuth) AuthLogout(c *gin.Context) {
