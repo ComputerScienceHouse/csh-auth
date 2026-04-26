@@ -1,4 +1,4 @@
-module github.com/computersciencehouse/csh-auth
+module github.com/computersciencehouse/csh-auth/v1
 
 go 1.25.7
 
