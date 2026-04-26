@@ -5,44 +5,36 @@ An @ComputerScienceHouse authentication wrapper for Gin.
 
 ## Usage
 
-1. Create a CSHAuth Struct
+1. Initialize your csh-auth object
 
 ```
-csh := csh_auth.CSHAuth{}
-```
-
-2. Initialize your CSHAuth object
-
-```
-csh.Init(
-    /* oidc_client_id */,       // The OIDC client ID
-    /* oidc_client_secret */,   // The OIDC client Secret
-    /* jwt_secret */,           // I just used a random sequence of > 16 characters
-    /* state */,                // I just used a random sequence of > 16 characters
-    /* server_host */,          // The domain your application will run from
-    /* redirect_uri */,         // The OIDC redirect URI
-    /* auth_uri */,             // The relative path for your authentication endpoint
+auth := csh-auth.Init(
+    clientID            // the OIDC client ID
+    clientSecret        // the OIDC client secret
+    serverURL           // the "base" URL that this service is hosted from, e.g. "http://localhost:8000"
+    loginURL            // the URL for users to start the OAuth flow and login.
+                        // Commonly, this is set to something like ServerHost+"/auth/login"
+    callbackURL         // the URL that users will be redirected to at the end of the OAuth flow.
+                        // Commonly, this is set to something like ServerHost+"/auth/callback"
+    scopes              // pick scopes the application will use
 )
 ```
 
-3. Add required CSHAuth endpoints
+2. Add csh-auth endpoints for user login
 
 ```
-r.GET("/auth/login", csh.AuthRequest) // This endpoint should match auth_uri
-r.GET("/auth/callback", csh.AuthCallback) // This endpoint should match the relative portion of redirect_uri
-r.GET("/auth/logout", csh.AuthLogout)
+r.GET("/auth/login", auth.HandleLogin) // This endpoint should match the path for loginURL
+r.GET("/auth/callback", auth.HandleCallback) // This endpoint should match the path for callbackURL
+r.GET("/auth/logout", auth.HandleLogout)
 ```
 
-4. Add endpoints to be behind authentication
+3. Add endpoints to be behind authentication
 
-a. Use a wrapper function
-```
-r.GET("/hidden/prize", csh.AuthWrapper(endpoint_hidden_prize))
-```
+For client authentication, use `auth.CookieMiddleware()`  
+For application authentication via Bearer tokens, use `auth.HeaderMiddleware()`.
+The HeaderMiddleware only accepts the `Authorization` header with the format `Bearer: <JWT AccessToken>`.
 
-b. Use middleware.
-
-For a single route: `r.GET("/hidden/prize", csh.AuthWrapper, endpoint_hidden_prize)`  
+For a single route: `r.GET("/locked/prize", auth.CookieMiddleware(), endpoint_hidden_prize)`  
 This works because Gin will run the widest scope function to the most narrow scope function, in order. 
 
 For more/all routes: Check the [Gin Middleware documentation](https://gin-gonic.com/en/docs/middleware/) page.

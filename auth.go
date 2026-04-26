@@ -29,9 +29,9 @@ type Auth struct {
 	clientSecret string
 	// serverURL is the "base" URL that this service is hosted from, e.g. "http://localhost:8000"
 	serverURL string
-	// authenticateURL is the URL for users to start the OAuth flow and login.
+	// loginURL is the URL for users to start the OAuth flow and login.
 	// Commonly, this is set to something like ServerHost+"/auth/login"
-	authenticateURL string
+	loginURL string
 	// callbackURL is the URL that users will be redirected to at the end of the OAuth flow.
 	// Commonly, this is set to something like ServerHost+"/auth/callback"
 	callbackURL string
@@ -56,14 +56,14 @@ type Claims struct {
 	UserInfo
 }
 
-func Init(oidcClientID string, oidcClientSecret string, serverURL string, authenticateURL string, callbackURL string, scopes []string) (Auth, error) {
+func Init(oidcClientID string, oidcClientSecret string, serverURL string, loginURL string, callbackURL string, scopes []string) (Auth, error) {
 	auth := Auth{
-		clientID:        oidcClientID,
-		clientSecret:    oidcClientSecret,
-		serverURL:       serverURL,
-		authenticateURL: authenticateURL,
-		callbackURL:     callbackURL,
-		ctx:             context.Background(),
+		clientID:     oidcClientID,
+		clientSecret: oidcClientSecret,
+		serverURL:    serverURL,
+		loginURL:     loginURL,
+		callbackURL:  callbackURL,
+		ctx:          context.Background(),
 	}
 
 	auth.secure = serverURL[0:5] == "https"
@@ -106,18 +106,18 @@ func (auth *Auth) HandleCallback(c *gin.Context) {
 	ref, err := c.Cookie("ref")
 	if err != nil {
 		log.Error("no callback ref cookie")
-		c.Redirect(http.StatusFound, auth.authenticateURL)
+		c.Redirect(http.StatusFound, auth.loginURL)
 		return
 	}
 	state, ok := StateLookup[ref]
 	if !ok {
 		log.Error("callback ref not found")
-		c.Redirect(http.StatusFound, auth.authenticateURL)
+		c.Redirect(http.StatusFound, auth.loginURL)
 		return
 	}
 	if c.Query("state") != state {
 		log.Error("state does not match")
-		c.Redirect(http.StatusFound, auth.authenticateURL)
+		c.Redirect(http.StatusFound, auth.loginURL)
 		return
 	}
 
@@ -131,6 +131,11 @@ func (auth *Auth) HandleCallback(c *gin.Context) {
 	c.Redirect(http.StatusFound, c.Query("referer"))
 }
 
+func (auth *Auth) HandleLogout(c *gin.Context) {
+	c.SetCookie(CookieName, "", 0, "", "", false, true)
+	c.Redirect(http.StatusFound, ProviderURI+"/protocol/openid-connect/logout?post_logout_redirect_uri="+auth.serverURL+"/&client_id="+auth.clientID+"")
+}
+
 // Middleware functions
 
 func (auth *Auth) CookieMiddleware() gin.HandlerFunc {
@@ -138,7 +143,7 @@ func (auth *Auth) CookieMiddleware() gin.HandlerFunc {
 		cookie, err := c.Cookie(CookieName)
 		if err != nil {
 			log.Error(CookieName, "cookie not found")
-			c.Redirect(http.StatusFound, auth.authenticateURL+"?referer="+c.Request.URL.String())
+			c.Redirect(http.StatusFound, auth.loginURL+"?referer="+c.Request.URL.String())
 			return
 		}
 		err = auth.setGinContext(c, cookie)
