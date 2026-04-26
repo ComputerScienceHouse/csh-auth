@@ -5,7 +5,7 @@ An @ComputerScienceHouse authentication wrapper for Gin.
 
 ## Usage
 
-1. Initialize your csh-auth object
+### Initialize your csh-auth object
 
 ```
 auth := csh-auth.Init(
@@ -20,7 +20,7 @@ auth := csh-auth.Init(
 )
 ```
 
-2. Add csh-auth endpoints for user login
+### Add csh-auth endpoints for user login
 
 ```
 r.GET("/auth/login", auth.HandleLogin) // This endpoint should match the path for loginURL
@@ -28,7 +28,7 @@ r.GET("/auth/callback", auth.HandleCallback) // This endpoint should match the p
 r.GET("/auth/logout", auth.HandleLogout)
 ```
 
-3. Add endpoints to be behind authentication
+### Add endpoints to be behind authentication
 
 For client authentication, use `auth.CookieMiddleware()`  
 For application authentication via Bearer tokens, use `auth.HeaderMiddleware()`.
@@ -39,3 +39,6 @@ This works because Gin will run the widest scope function to the most narrow sco
 
 For more/all routes: Check the [Gin Middleware documentation](https://gin-gonic.com/en/docs/middleware/) page.
 
+### Get user information
+The information for a user is located at `gin.Context#Get("cshauth")`.
+This information includes the JWT information as well.
