@@ -9,12 +9,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/coreos/go-oidc"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gin-gonic/gin"
+	"github.com/go-jose/go-jose/v4"
 	"github.com/golang-jwt/jwt/v5"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
-	jose "gopkg.in/go-jose/go-jose.v2"
 )
 
 const ContextKey = "cshauth"
@@ -150,6 +150,7 @@ func (auth *Auth) CookieMiddleware() gin.HandlerFunc {
 		err = auth.setGinContext(c, cookie)
 		if err != nil {
 			log.Error("failed to set context")
+			c.Redirect(http.StatusFound, auth.loginURL+"?referer="+c.Request.URL.String())
 			return
 		}
 	}
@@ -171,6 +172,8 @@ func (auth *Auth) HeaderMiddleware() gin.HandlerFunc {
 		err := auth.setGinContext(c, header)
 		if err != nil {
 			log.Error("failed to set context")
+			c.Header("WWW-Authenticate", "Authentication Token Invalid")
+			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
 
