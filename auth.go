@@ -14,6 +14,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
+	jose "gopkg.in/go-jose/go-jose.v2"
 )
 
 const ContextKey = "cshauth"
@@ -197,23 +198,25 @@ func (auth *Auth) setGinContext(c *gin.Context, tokenString string) error {
 }
 
 func getVerificationKeys() jwt.VerificationKeySet {
-	client := http.DefaultClient
-	res, err := client.Get(ProviderURI + "/protocol/openid-connect/certs")
+	res, err := http.DefaultClient.Get(ProviderURI + "/protocol/openid-connect/certs")
 	if err != nil {
-		log.Error("Failed to get verification keys", err)
+		log.Error("Failed to get verification keys: ", err)
 		return jwt.VerificationKeySet{}
 	}
+	defer res.Body.Close()
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Error("Failed to read verification keys", err)
+		log.Error("Failed to read verification keys: ", err)
 		return jwt.VerificationKeySet{}
 	}
-	res.Body.Close()
-	ret := jwt.VerificationKeySet{}
-	err = json.Unmarshal(data, &ret)
-	if err != nil {
-		log.Error("Failed to unmarshal verification keys", err)
+	var jwks jose.JSONWebKeySet
+	if err := json.Unmarshal(data, &jwks); err != nil {
+		log.Error("Failed to unmarshal verification keys: ", err)
 		return jwt.VerificationKeySet{}
 	}
-	return ret
+	keys := make([]jwt.VerificationKey, 0, len(jwks.Keys))
+	for _, k := range jwks.Keys {
+		keys = append(keys, k.Key)
+	}
+	return jwt.VerificationKeySet{Keys: keys}
 }
