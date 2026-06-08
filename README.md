@@ -15,7 +15,7 @@ import cshauth "github.com/computersciencehouse/csh-auth/v2"
 ### Initialize your csh-auth object
 
 ```go
-auth := csh-auth.Init(
+auth := cshauth.Init(
     clientID            // the OIDC client ID
     clientSecret        // the OIDC client secret
     serverURL           // the "base" URL that this service is hosted from, e.g. "http://localhost:8000"
