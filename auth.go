@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -164,12 +165,14 @@ func (auth *Auth) HeaderMiddleware() gin.HandlerFunc {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-		if header[0:8] != "Bearer: " {
+		if !strings.HasPrefix(header, "Bearer ") {
 			c.Header("WWW-Authenticate", "Bad Authentication Header")
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-		err := auth.setGinContext(c, header)
+
+		jwt := strings.TrimPrefix(header, "Bearer ")
+		err := auth.setGinContext(c, jwt)
 		if err != nil {
 			log.Error("failed to set context")
 			c.Header("WWW-Authenticate", "Authentication Token Invalid")
