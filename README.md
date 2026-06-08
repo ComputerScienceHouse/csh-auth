@@ -1,14 +1,21 @@
-csh-auth
-========
+csh-auth v2
+===========
 
 An @ComputerScienceHouse authentication wrapper for Gin.
+> **Note:** This documentation is for **v2** of the library.
+> If you are looking for v1, please check the master branch.
 
 ## Usage
 
+### Import csh-auth
+```go
+import cshauth "github.com/computersciencehouse/csh-auth/v2"
+```
+
 ### Initialize your csh-auth object
 
-```
-auth := csh-auth.Init(
+```go
+auth := cshauth.Init(
     clientID            // the OIDC client ID
     clientSecret        // the OIDC client secret
     serverURL           // the "base" URL that this service is hosted from, e.g. "http://localhost:8000"
@@ -22,7 +29,7 @@ auth := csh-auth.Init(
 
 ### Add csh-auth endpoints for user login
 
-```
+```go
 r.GET("/auth/login", auth.HandleLogin) // This endpoint should match the path for loginURL
 r.GET("/auth/callback", auth.HandleCallback) // This endpoint should match the path for callbackURL
 r.GET("/auth/logout", auth.HandleLogout)
