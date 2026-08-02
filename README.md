@@ -32,6 +32,7 @@ auth, err := cshauth.Init(
 ```go
 r.GET("/auth/login", auth.HandleLogin) // This endpoint should match the path for loginURL
 r.GET("/auth/callback", auth.HandleCallback) // This endpoint should match the path for callbackURL
+r.POST("/auth/refresh", auth.HandleRefresh)
 r.GET("/auth/logout", auth.HandleLogout)
 ```
 
@@ -45,6 +46,36 @@ For a single route: `r.GET("/locked/prize", auth.CookieMiddleware(), endpoint_hi
 This works because Gin will run the widest scope function to the most narrow scope function, in order. 
 
 For more/all routes: Check the [Gin Middleware documentation](https://gin-gonic.com/en/docs/middleware/) page.
+
+### Using refresh tokens
+
+By default, a refresh token is stored in the browser's cookies. This token can be used to fetch a new auth token wihout having to redirect the user through SSO.
+
+csh-auth handles this throught the refresh handler.
+```go
+router.POST("/auth/refresh", auth.HandleRefresh)
+```
+
+Whenever the auth token is expired, the browser should make a POST request to this endpoint. The server will update the browser's cookie with a new token.
+
+This is particularly useful for SPAs, where the token validity isn't being check with every page interaction.
+
+#### Example Implementation
+
+The following is an example implementation that could be used in the browser.
+
+```ts
+const response = await fetch("/api/endpoint")
+
+if (response.status === 401) { // token expired
+    fetch('/auth/refresh', { // this will update the browser's cookie without requiring a page refresh
+      method: 'POST',
+      credentials: 'include',
+    })
+}
+```
+
+In a real application, the original request would typically be retried after a successful refresh. This example only demonstrates the basic refresh mechanism.
 
 ### Get user information
 The information for a user is located at `gin.Context#Get("cshauth")`.
