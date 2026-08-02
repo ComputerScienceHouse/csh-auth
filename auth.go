@@ -130,7 +130,35 @@ func (auth *Auth) HandleCallback(c *gin.Context) {
 	}
 
 	c.SetCookie(CookieName, oauthJWT.AccessToken, int(oauthJWT.ExpiresIn), "", "", false, true)
+	// refresh token
+	c.SetCookie("Refresh", oauthJWT.RefreshToken, 0, "", "", auth.secure, true)
 	c.Redirect(http.StatusFound, c.Query("referer"))
+}
+
+func (auth *Auth) HandleRefresh(c *gin.Context) {
+	refreshToken, err := c.Cookie("Refresh")
+
+	if err != nil || refreshToken == "" {
+		c.AbortWithStatus(401)
+		return
+	}
+
+	token := &oauth2.Token{
+		RefreshToken: refreshToken,
+	}
+
+	tokenSource := auth.oauth.TokenSource(auth.ctx, token)
+	newToken, err := tokenSource.Token()
+	if err != nil {
+		log.Error("failed to refresh token: ", err)
+		c.SetCookie("Auth", "", 0, "", "", auth.secure, true)
+		c.SetCookie("Refresh", "", 0, "", "", auth.secure, true)
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	c.SetCookie(CookieName, newToken.AccessToken, int(time.Until(newToken.Expiry).Seconds()), "", "", auth.secure, true)
+	c.Status(204)
 }
 
 func (auth *Auth) HandleLogout(c *gin.Context) {
