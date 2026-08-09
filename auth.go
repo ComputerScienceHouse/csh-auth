@@ -19,7 +19,8 @@ import (
 )
 
 const ContextKey = "cshauth"
-const CookieName = "Auth"
+const AuthCookieName = "Auth"
+const RefreshCookieName = "Refresh"
 const ProviderURI = "https://sso.csh.rit.edu/auth/realms/csh"
 
 var StateLookup map[string]string
@@ -129,14 +130,14 @@ func (auth *Auth) HandleCallback(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie(CookieName, oauthJWT.AccessToken, int(oauthJWT.ExpiresIn), "", "", false, true)
+	c.SetCookie(AuthCookieName, oauthJWT.AccessToken, int(oauthJWT.ExpiresIn), "", "", false, true)
 	// refresh token
-	c.SetCookie("Refresh", oauthJWT.RefreshToken, 0, "", "", auth.secure, true)
+	c.SetCookie(RefreshCookieName, oauthJWT.RefreshToken, 0, "", "", auth.secure, true)
 	c.Redirect(http.StatusFound, c.Query("referer"))
 }
 
 func (auth *Auth) HandleRefresh(c *gin.Context) {
-	refreshToken, err := c.Cookie("Refresh")
+	refreshToken, err := c.Cookie(RefreshCookieName)
 
 	if err != nil || refreshToken == "" {
 		c.AbortWithStatus(401)
@@ -151,18 +152,18 @@ func (auth *Auth) HandleRefresh(c *gin.Context) {
 	newToken, err := tokenSource.Token()
 	if err != nil {
 		log.Error("failed to refresh token: ", err)
-		c.SetCookie("Auth", "", 0, "", "", auth.secure, true)
-		c.SetCookie("Refresh", "", 0, "", "", auth.secure, true)
+		c.SetCookie(AuthCookieName, "", 0, "", "", auth.secure, true)
+		c.SetCookie(RefreshCookieName, "", 0, "", "", auth.secure, true)
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
-	c.SetCookie(CookieName, newToken.AccessToken, int(time.Until(newToken.Expiry).Seconds()), "", "", auth.secure, true)
+	c.SetCookie(AuthCookieName, newToken.AccessToken, int(time.Until(newToken.Expiry).Seconds()), "", "", auth.secure, true)
 	c.Status(204)
 }
 
 func (auth *Auth) HandleLogout(c *gin.Context) {
-	c.SetCookie(CookieName, "", 0, "", "", false, true)
+	c.SetCookie(AuthCookieName, "", 0, "", "", false, true)
 	c.Redirect(http.StatusFound, ProviderURI+"/protocol/openid-connect/logout?post_logout_redirect_uri="+auth.serverURL+"/&client_id="+auth.clientID+"")
 }
 
@@ -170,9 +171,9 @@ func (auth *Auth) HandleLogout(c *gin.Context) {
 
 func (auth *Auth) CookieMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		cookie, err := c.Cookie(CookieName)
+		cookie, err := c.Cookie(AuthCookieName)
 		if err != nil {
-			log.Error(CookieName, "cookie not found")
+			log.Error(AuthCookieName, "cookie not found")
 			c.Redirect(http.StatusFound, auth.loginURL+"?referer="+c.Request.URL.String())
 			return
 		}
